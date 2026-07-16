@@ -1,7 +1,6 @@
-ccxt>=4.0.0
-pandas>=2.0.0
-pandas-ta>=0.3.14b
-requests>=2.31.0
-numpy>=1.24.0
-yfinance>=0.2.38
-Flask>=3.0.0
+Flask==3.0.3
+pandas==1.5.3
+numpy==1.26.4
+pandas-ta==0.3.14b0
+yfinance==0.2.40
+requests==2.32.3
