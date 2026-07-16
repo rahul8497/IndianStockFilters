@@ -1,10 +1,24 @@
+# ==========================================
+# 🔧 LEGACY COMPATIBILITY PATCH FOR PANDAS-TA
+# ==========================================
+import numpy as np
+# Inject missing legacy aliases back into numpy so pandas-ta runs on modern environments
+if not hasattr(np, 'int'):
+    np.int = int
+if not hasattr(np, 'float'):
+    np.float = float
+if not hasattr(np, 'bool'):
+    np.bool = bool
+
+# ==========================================
+# STANDARD IMPORTS
+# ==========================================
 import time
 import threading
 import os
 import datetime
 import pandas as pd
 import pandas_ta as ta
-import numpy as np
 import requests
 import yfinance as yf
 from flask import Flask
