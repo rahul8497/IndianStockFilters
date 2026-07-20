@@ -16,7 +16,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return f"Bot Matrix Status: ONLINE | Scanning {len(ACTIVE_SYMBOLS)} Nifty 200 Stocks Under ₹300", 200
+    return f"Bot Matrix Status: ONLINE | Scanning {len(ACTIVE_SYMBOLS)} Assets", 200
 
 def run_web_server():
     port = int(os.environ.get("PORT", 10000))
@@ -70,11 +70,22 @@ STOCK_LIST = [
 def filter_and_initialize_symbols():
     """
     Scans the Nifty 200 stock list and keeps only those trading strictly below 300 INR.
+    Explicitly keeps ^NSEI (Nifty 50 Index) exempt from the price threshold requirement.
     """
-    active_list = ["^NSEI"]  # Keep Nifty index exempt from price limit checks
-    display_names = {"^NSEI": "NIFTY 50"}
+    active_list = ["^NSEI"]  # Pre-populate with Nifty 50 Index
+    display_names = {"^NSEI": "NIFTY 50 INDEX"}
     
     print("\n🔍 Evaluating Nifty 200. Filtering out stocks above ₹300...")
+    
+    # Process Nifty index metadata verification first
+    try:
+        nifty_idx = yf.Ticker("^NSEI")
+        idx_price = nifty_idx.fast_info.last_price
+        if idx_price is not None and idx_price > 0:
+            print(f"✅ EXEMPTED & ACCEPTED: ^NSEI (Nifty 50 Index Price: ₹{idx_price:.2f})")
+    except Exception as e:
+        print(f"⚠️ Note tracking index price failed during validation setup: {e}")
+
     for symbol in STOCK_LIST:
         try:
             stock = yf.Ticker(symbol)
@@ -89,7 +100,11 @@ def filter_and_initialize_symbols():
             if price is not None and price > 0:
                 if price <= 300.0:
                     active_list.append(symbol)
-                    long_name = stock.info.get('longName', symbol.replace(".NS", ""))
+                    # Use fallback to safely extract the string name without killing logic execution
+                    try:
+                        long_name = stock.info.get('longName', symbol.replace(".NS", ""))
+                    except Exception:
+                        long_name = symbol.replace(".NS", "")
                     display_names[symbol] = long_name
                     print(f"✅ ACCEPTED: {symbol} (Price: ₹{price:.2f})")
                 else:
@@ -100,7 +115,7 @@ def filter_and_initialize_symbols():
         except Exception as e:
             print(f"⚠️ ERROR evaluating {symbol}: {e}")
             
-    print(f"\n🚀 Ready! Tracking {len(active_list)} Nifty 200 assets under ₹300.\n")
+    print(f"\n🚀 Ready! Tracking {len(active_list)} assets (Nifty Index + constituents under ₹300).\n")
     return active_list, display_names
 
 
@@ -128,7 +143,7 @@ def send_telegram_message(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "Markdown"}
     try:
-        requests.post(url, json=payload)
+        requests.post(url, json=payload, timeout=10)
     except Exception as e:
         print(f"Network error sending Telegram notification: {e}")
 
@@ -310,12 +325,12 @@ def analyze_market(df, symbol):
 # RUNTIME SCANNER LIFECYCLE
 # ==========================================
 def core_market_scanner_loop():
-    print(f"Indian Stock Market (NSE) Nifty 200 Scanner Online...")
+    print(f"Indian Stock Market (NSE) Scanner Online...")
     send_telegram_message(
-        f"🚀 *Nifty 200 Watchlist Engine Online* 🚀\n"
+        f"🚀 *Nifty 200 + Nifty 50 Watchlist Engine Online* 🚀\n"
         f"• Monitoring dedicated bot feed.\n"
-        f"• Dynamic filter strictly capping assets under ₹300.\n"
-        f"• Active watchlist assets: {len(ACTIVE_SYMBOLS)}"
+        f"• Dynamic filter tracking NIFTY Index + assets under ₹300.\n"
+        f"• Total tracked assets: {len(ACTIVE_SYMBOLS)}"
     )
     
     while True:
@@ -341,6 +356,7 @@ def core_market_scanner_loop():
                         
             time.sleep(15)
         except Exception as e:
+            print(f"Loop runtime exception occurred: {e}")
             time.sleep(5)
 
 if __name__ == "__main__":
