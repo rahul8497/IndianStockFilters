@@ -126,7 +126,7 @@ ACTIVE_SYMBOLS, DISPLAY_NAMES = filter_and_initialize_symbols()
 # ==========================================
 # TECHNICAL PARAMETERS
 # ==========================================
-TIMEFRAMES = ["5m", "15m", "1h", "4h", "1d"]
+TIMEFRAMES = ["15m", "1h", "4h", "1d"]
 
 TREND_LENGTH = 50
 RSI_LENGTH = 14
@@ -181,10 +181,10 @@ def fetch_candles(symbol, timeframe, limit=100):
     try:
         target_tf = "60m" if timeframe == "4h" else timeframe
         
-        yf_tf_map = {"5m": "5m", "15m": "15m", "1h": "60m", "1d": "1d"}
+        yf_tf_map = {"15m": "15m", "1h": "60m", "1d": "1d"}
         yf_tf = yf_tf_map.get(target_tf, "15m")
         
-        period_map = {"5m": "5d", "15m": "5d", "60m": "14d", "1d": "3mo"}
+        period_map = {"15m": "5d", "60m": "14d", "1d": "3mo"}
         fetch_period = "14d" if timeframe == "4h" else period_map.get(yf_tf, "5d")
         
         ticker = yf.Ticker(symbol)
